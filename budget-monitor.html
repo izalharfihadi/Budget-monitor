@@ -429,7 +429,7 @@ function renderDashboard() {
   var remaining = data.budget - (dailyBurn * daysElapsed);
   var daysLeft = totalDays - daysElapsed;
   var pctUsed = Math.round((daysElapsed / totalDays) * 100);
-  var remainingRaw = remaining;
+  var remainingRaw = Math.round(remaining);
 
   var copyIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
@@ -438,7 +438,7 @@ function renderDashboard() {
     + '<div class="dash-hero">'
     +   '<div class="dash-hero-top">'
     +     '<div class="dash-hero-amount"><span class="currency">Rp</span>' + fmt(remaining) + '</div>'
-    +     '<button class="copy-btn" id="btn-copy">' + copyIconSvg + '</button>'
+    +     '<button class="copy-btn" id="btn-copy" data-val="' + remainingRaw + '">' + copyIconSvg + '</button>'
     +   '</div>'
     +   '<div class="dash-hero-date">Per ' + fmtDate(today) + '</div>'
     + '</div>'
@@ -454,7 +454,8 @@ function renderDashboard() {
 
   // Copy button hero — pakai onclick langsung karena innerHTML baru dibuat
   document.getElementById('btn-copy').onclick = function() {
-    copyAmount(remainingRaw, this);
+    var v = parseFloat(this.getAttribute('data-val'));
+    copyAmount(v, this);
   };
 
   // Tap baris slot untuk copy
