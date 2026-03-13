@@ -175,15 +175,33 @@
 <script>
 // Storage: pakai cookies agar bekerja di file:// Safari iOS
 var COOKIE_KEY = 'bm_v1';
+var GAS_URL = 'https://script.google.com/macros/s/AKfycbysQGPa-V4-kpBbuhtPv8x0-P801PR9653TkQZQ8ViiBlPdg_Fof5ZO8md50rM3CILo/exec';
 
 function saveData(d) {
+  // Simpan lokal dulu (cookie + localStorage)
   var val = encodeURIComponent(JSON.stringify(d));
-  // expires 1 tahun
   var exp = new Date();
   exp.setFullYear(exp.getFullYear() + 1);
   document.cookie = COOKIE_KEY + '=' + val + '; expires=' + exp.toUTCString() + '; path=/';
-  // fallback: coba localStorage juga
   try { localStorage.setItem(COOKIE_KEY, JSON.stringify(d)); } catch(e) {}
+
+  // Kirim ke Google Sheets di background
+  syncToSheets(d);
+}
+
+function syncToSheets(d) {
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      budget: d.budget,
+      start: d.start,
+      end: d.end
+    })
+  }).catch(function() {
+    // Gagal sync — tidak apa, data lokal tetap aman
+  });
 }
 
 function loadData() {
@@ -277,22 +295,24 @@ function showErr(msg) {
   el.style.display = 'block';
 }
 
-function copyAmount(val) {
+function copyAmount(val, btnEl) {
   var clean = String(Math.round(val));
+  // Visual feedback langsung — tidak tunggu hasil copy
+  if (btnEl) {
+    btnEl.style.background = 'rgba(255,255,255,0.38)';
+    setTimeout(function() { btnEl.style.background = ''; }, 200);
+  }
+  // Coba copy
   var ta = document.createElement('textarea');
   ta.value = clean;
   ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
   document.body.appendChild(ta);
   ta.focus();
   ta.setSelectionRange(0, ta.value.length);
-  var ok = false;
-  try { ok = document.execCommand('copy'); } catch(e) {}
+  try { document.execCommand('copy'); } catch(e) {}
   document.body.removeChild(ta);
-  if (ok) { showToast(); return; }
-  // fallback modern API
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(clean).then(showToast).catch(function(){});
-  }
+  // Selalu tampilkan toast
+  showToast();
 }
 
 function showToast() {
@@ -380,7 +400,7 @@ function renderDashboard() {
 
   // Copy button hero — pakai onclick langsung karena innerHTML baru dibuat
   document.getElementById('btn-copy').onclick = function() {
-    copyAmount(remainingRaw);
+    copyAmount(remainingRaw, this);
   };
 
   // Tap baris slot untuk copy
