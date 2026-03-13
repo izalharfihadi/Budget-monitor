@@ -21,13 +21,14 @@
     --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
   }
   body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
-  nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
-  nav button { flex: 1; border: none; background: none; padding: 12px 0 10px; font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--ink-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; -webkit-tap-highlight-color: transparent; }
-  nav button.active { color: var(--accent); }
-  nav button svg { width: 22px; height: 22px; }
-  .page { display: none; padding: 24px 20px; padding-bottom: calc(88px + env(safe-area-inset-bottom)); min-height: 100dvh; }
+  .page { display: none; padding: 0 20px 40px; padding-top: calc(16px + env(safe-area-inset-top)); min-height: 100dvh; }
   .page.active { display: block; }
-  h1 { font-size: 13px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; margin-top: 8px; }
+
+  /* top nav */
+  .top-nav { display: flex; justify-content: space-between; align-items: center; padding: 12px 0 20px; }
+  .top-nav-title { font-size: 12px; font-weight: 600; color: var(--ink-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  .top-nav-link { font-size: 13px; font-weight: 600; color: var(--accent); background: var(--accent-light); border: none; border-radius: 20px; padding: 6px 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; font-family: var(--sans); }
+  .top-nav-link:active { opacity: 0.7; }
   .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
   .field { margin-bottom: 20px; }
   label { display: block; font-size: 12px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
@@ -37,14 +38,16 @@
   .hint { font-size: 12px; color: var(--ink-muted); margin-top: 6px; font-family: var(--mono); }
   .btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: 12px; padding: 15px; font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; display: block; }
   .btn:active { opacity: 0.75; }
-  .btn-reset { width: 100%; background: none; color: var(--danger); border: 1.5px solid var(--danger); border-radius: 12px; padding: 13px; font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 10px; -webkit-tap-highlight-color: transparent; display: none; }
+  .btn-reset { width: 100%; background: none; color: var(--danger); border: none; padding: 10px; font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; margin-top: 4px; -webkit-tap-highlight-color: transparent; display: none; opacity: 0.6; }
+  .btn-reset:active { opacity: 0.4; }
   .btn-reset.visible { display: block; }
   .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
   .dash-hero { background: var(--accent); border-radius: 20px; padding: 28px 24px; margin-bottom: 16px; position: relative; overflow: hidden; }
   .dash-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; background: rgba(255,255,255,0.06); border-radius: 50%; pointer-events: none; }
   .dash-hero-amount { font-family: var(--mono); font-size: 38px; font-weight: 400; color: white; letter-spacing: -0.5px; line-height: 1; }
   .dash-hero-amount .currency { font-size: 18px; opacity: 0.7; margin-right: 2px; }
-  .dash-hero-date { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.55); font-family: var(--mono); }
+  .dash-hero-date { margin-top: 10px; font-size: 12px; color: rgba(255,255,255,0.55); font-family: var(--mono); }
+  .dash-hero-period { margin-top: 6px; font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.7); font-family: var(--sans); letter-spacing: 0.03em; }
 
   /* copy button — icon only */
   .dash-hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -87,8 +90,6 @@
   .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
   .empty-state-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
   .empty-state-body { font-size: 13px; line-height: 1.5; }
-  .period-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-light); color: var(--accent); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 600; margin-bottom: 20px; }
-  .period-chip::before { content: '●'; font-size: 7px; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .fade-up { animation: fadeUp 0.3s ease forwards; }
 
@@ -130,7 +131,10 @@
 <div class="copy-toast" id="copy-toast">Tersalin!</div>
 
 <div class="page" id="page-input">
-  <h1>Budget Setup</h1>
+  <div class="top-nav">
+    <span class="top-nav-title">Budget Setup</span>
+    <button class="top-nav-link" id="nav-to-dashboard">Dashboard →</button>
+  </div>
   <div class="card">
     <div class="field">
       <label>Nominal Budget (Rp)</label>
@@ -152,25 +156,12 @@
 </div>
 
 <div class="page" id="page-dashboard">
+  <div class="top-nav">
+    <button class="top-nav-link" id="nav-to-input">← Setup</button>
+    <span></span>
+  </div>
   <div id="dash-content"></div>
 </div>
-
-<nav>
-  <button id="nav-input">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-    Input
-  </button>
-  <button id="nav-dashboard">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-    </svg>
-    Dashboard
-  </button>
-</nav>
 
 <script>
 // Storage: pakai cookies agar bekerja di file:// Safari iOS
@@ -319,15 +310,13 @@ inpBudget.addEventListener('input', function() {
 function switchPage(name) {
   ['input','dashboard'].forEach(function(n) {
     document.getElementById('page-'+n).classList.remove('active');
-    document.getElementById('nav-'+n).classList.remove('active');
   });
   document.getElementById('page-'+name).classList.add('active');
-  document.getElementById('nav-'+name).classList.add('active');
   if (name === 'dashboard') renderDashboard();
 }
 
-document.getElementById('nav-input').addEventListener('click', function() { switchPage('input'); });
-document.getElementById('nav-dashboard').addEventListener('click', function() { switchPage('dashboard'); });
+document.getElementById('nav-to-input').addEventListener('click', function() { switchPage('input'); });
+document.getElementById('nav-to-dashboard').addEventListener('click', function() { switchPage('dashboard'); });
 
 document.getElementById('btn-save').addEventListener('click', function() {
   document.getElementById('input-error').style.display = 'none';
@@ -340,6 +329,7 @@ document.getElementById('btn-save').addEventListener('click', function() {
   if (parseIso(endStr) <= parseIso(startStr)) { showErr('Tanggal selesai harus setelah tanggal mulai.'); return; }
   saveData({ budget: budget, start: startStr, end: endStr });
   document.getElementById('btn-reset').classList.add('visible');
+  document.getElementById('nav-to-dashboard').style.display = '';
   switchPage('dashboard');
 });
 
@@ -352,6 +342,7 @@ document.getElementById('btn-reset').addEventListener('click', function() {
   document.getElementById('inp-end').value = '';
   document.getElementById('input-error').style.display = 'none';
   document.getElementById('btn-reset').classList.remove('visible');
+  document.getElementById('nav-to-dashboard').style.display = 'none';
   switchPage('input');
 });
 
@@ -434,7 +425,7 @@ function renderDashboard() {
     return;
   }
   if (today > end) {
-    el.innerHTML = '<div class="fade-up"><div class="alert alert-danger"><span class="alert-icon">&#9209;</span><div><div class="alert-title">Periode Telah Berakhir</div><div class="alert-body">Periode selesai pada <strong>' + fmtDate(end) + '</strong>.<br>Silakan buat budget baru di tab Input.</div></div></div><div class="dash-card"><div class="info-row"><span class="info-row-label">Total Budget</span><span class="info-row-value">' + fmtFull(data.budget) + '</span></div><div class="info-row"><span class="info-row-label">Periode</span><span class="info-row-value">' + fmtDate(start) + ' - ' + fmtDate(end) + '</span></div></div></div>';
+    el.innerHTML = '<div class="fade-up"><div class="alert alert-danger"><span class="alert-icon">&#9209;</span><div><div class="alert-title">Periode Telah Berakhir</div><div class="alert-body">Periode selesai pada <strong>' + fmtDate(end) + '</strong>.<br>Silakan buat budget baru di Setup.</div></div></div><div class="dash-card"><div class="info-row"><span class="info-row-label">Total Budget</span><span class="info-row-value">' + fmtFull(data.budget) + '</span></div><div class="info-row"><span class="info-row-label">Periode</span><span class="info-row-value">' + fmtDate(start) + ' - ' + fmtDate(end) + '</span></div></div></div>';
     return;
   }
 
@@ -447,13 +438,13 @@ function renderDashboard() {
   var remainingRaw = Math.round(remaining);
 
   el.innerHTML = '<div class="fade-up">'
-    + '<div class="period-chip">Periode Aktif &middot; ' + daysLeft + ' hari lagi</div>'
     + '<div class="dash-hero">'
     +   '<div class="dash-hero-top">'
     +     '<div class="dash-hero-amount"><span class="currency">Rp</span>' + fmt(remaining) + '</div>'
     +     '<div class="copy-btn" id="btn-copy" data-val="' + remainingRaw + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="pointer-events:none;width:18px;height:18px"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div>'
     +   '</div>'
     +   '<div class="dash-hero-date">Per ' + fmtDate(today) + '</div>'
+    +   '<div class="dash-hero-period">Periode Aktif &middot; ' + daysLeft + ' hari lagi</div>'
     + '</div>'
     + '<div class="dash-card">'
     +   '<div class="info-row"><span class="info-row-label">Total Budget</span><span class="info-row-value">' + fmtFull(data.budget) + '</span></div>'
@@ -496,6 +487,7 @@ function renderDashboard() {
 // Init
 (function() {
   var data = loadData();
+  var dashBtn = document.getElementById('nav-to-dashboard');
   if (data) {
     var num = parseInt(data.budget, 10);
     inpBudget.value = num.toLocaleString('id-ID');
@@ -505,6 +497,7 @@ function renderDashboard() {
     document.getElementById('btn-reset').classList.add('visible');
     switchPage('dashboard');
   } else {
+    dashBtn.style.display = 'none';
     switchPage('input');
   }
 
