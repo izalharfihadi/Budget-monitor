@@ -226,8 +226,42 @@ function saveCookieOnly(d) {
   try { localStorage.setItem(COOKIE_KEY, JSON.stringify(d)); } catch(e) {}
 }
 
+function toIsoDate(val) {
+  // Google Sheets kadang mengembalikan tanggal sebagai string lokal atau Date
+  // Kita normalkan ke format YYYY-MM-DD
+  if (!val) return '';
+  var s = String(val).trim();
+  // Sudah format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  // Coba parse sebagai Date lalu format ulang
+  var d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-'
+      + String(d.getMonth() + 1).padStart(2, '0') + '-'
+      + String(d.getDate()).padStart(2, '0');
+  }
+  return s;
+}
+
+function applyRemoteData(remote) {
+  var d = {
+    budget: parseInt(remote.budget, 10),
+    start: toIsoDate(remote.start),
+    end: toIsoDate(remote.end),
+    savedAt: remote.savedAt
+  };
+  saveCookieOnly(d);
+  var num = d.budget;
+  inpBudget.value = num.toLocaleString('id-ID');
+  document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
+  document.getElementById('inp-start').value = d.start;
+  document.getElementById('inp-end').value = d.end;
+  document.getElementById('btn-reset').classList.add('visible');
+  // Langsung ke dashboard tanpa perlu tap Simpan
+  switchPage('dashboard');
+}
+
 function backgroundSync() {
-  // Ambil data dari Spreadsheet di background, bandingkan timestamp
   fetch(GAS_URL, { method: 'GET', mode: 'cors' })
     .then(function(res) { return res.json(); })
     .then(function(json) {
@@ -235,41 +269,19 @@ function backgroundSync() {
       var remote = json.data[0];
       if (!remote.savedAt) return;
       var local = loadData();
-      // Kalau tidak ada data lokal → pakai data Spreadsheet
       if (!local) {
-        var d = { budget: remote.budget, start: remote.start, end: remote.end, savedAt: remote.savedAt };
-        saveCookieOnly(d);
-        // Reload halaman input dengan data baru
-        var num = parseInt(d.budget, 10);
-        inpBudget.value = num.toLocaleString('id-ID');
-        document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
-        document.getElementById('inp-start').value = d.start;
-        document.getElementById('inp-end').value = d.end;
-        document.getElementById('btn-reset').classList.add('visible');
-        renderDashboard();
+        applyRemoteData(remote);
         return;
       }
       var localTime = local.savedAt ? new Date(local.savedAt).getTime() : 0;
       var remoteTime = new Date(remote.savedAt).getTime();
       if (remoteTime > localTime) {
-        // Spreadsheet lebih baru → update cookie dan tampilan
-        var d = { budget: remote.budget, start: remote.start, end: remote.end, savedAt: remote.savedAt };
-        saveCookieOnly(d);
-        var num = parseInt(d.budget, 10);
-        inpBudget.value = num.toLocaleString('id-ID');
-        document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
-        document.getElementById('inp-start').value = d.start;
-        document.getElementById('inp-end').value = d.end;
-        document.getElementById('btn-reset').classList.add('visible');
-        renderDashboard();
+        applyRemoteData(remote);
       } else if (localTime > remoteTime) {
-        // Cookie lebih baru → push ke Spreadsheet
         pushToSheets(local);
       }
     })
-    .catch(function() {
-      // Offline atau gagal — tidak apa-apa, cookie tetap dipakai
-    });
+    .catch(function() {});
 }
 
 function clearData() {
@@ -351,22 +363,25 @@ function showErr(msg) {
 
 function copyAmount(val, btnEl) {
   var clean = String(Math.round(val));
-  // Visual feedback langsung — tidak tunggu hasil copy
+  // Visual feedback
   if (btnEl) {
     btnEl.style.background = 'rgba(255,255,255,0.38)';
-    setTimeout(function() { btnEl.style.background = ''; }, 200);
+    btnEl.style.transform = 'scale(0.88)';
+    setTimeout(function() {
+      btnEl.style.background = '';
+      btnEl.style.transform = '';
+    }, 200);
   }
-  // Coba copy
-  var ta = document.createElement('textarea');
-  ta.value = clean;
-  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
-  document.body.appendChild(ta);
-  ta.focus();
-  ta.setSelectionRange(0, ta.value.length);
-  try { document.execCommand('copy'); } catch(e) {}
-  document.body.removeChild(ta);
-  // Selalu tampilkan toast
-  showToast();
+  // navigator.clipboard — metode resmi Safari iOS (HTTPS)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(clean).then(function() {
+      showToast();
+    }).catch(function() {
+      showToast(); // Tetap tampilkan toast meski gagal
+    });
+  } else {
+    showToast();
+  }
 }
 
 function showToast() {
