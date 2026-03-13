@@ -82,23 +82,24 @@
     pointer-events: none;
   }
   #splash img {
-    width: 110px;
-    height: 110px;
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     object-fit: cover;
-    animation: splashBounce 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite alternate;
+    animation: splashBounce 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1 forwards;
   }
   @keyframes splashBounce {
     0%   { transform: translateY(0px) scale(1); }
-    60%  { transform: translateY(-18px) scale(1.05); }
-    100% { transform: translateY(0px) scale(0.97); }
+    40%  { transform: translateY(-22px) scale(1.06); }
+    70%  { transform: translateY(6px) scale(0.96); }
+    100% { transform: translateY(0px) scale(1); }
   }
 </style>
 </head>
 <body>
 
 <div id="splash">
-  <img src="icon.png" alt="Budget Monitor">
+  <img src="icon-splash.png" alt="Budget Monitor">
 </div>
 
 <div class="page" id="page-input">
