@@ -46,30 +46,31 @@
   .dash-hero-amount .currency { font-size: 18px; opacity: 0.7; margin-right: 2px; }
   .dash-hero-date { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.55); font-family: var(--mono); }
 
-  /* copy button */
+  /* copy button — icon only */
   .dash-hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
-  .copy-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 8px; padding: 6px 10px; cursor: pointer; display: flex; align-items: center; gap: 5px; color: white; font-size: 11px; font-family: var(--sans); font-weight: 500; -webkit-tap-highlight-color: transparent; transition: background 0.15s; flex-shrink: 0; }
-  .copy-btn:active { background: rgba(255,255,255,0.28); }
-  .copy-btn svg { width: 14px; height: 14px; }
+  .copy-btn { background: rgba(255,255,255,0.15); border: none; border-radius: 8px; padding: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white; -webkit-tap-highlight-color: transparent; transition: background 0.15s; flex-shrink: 0; }
+  .copy-btn:active { background: rgba(255,255,255,0.32); }
+  .copy-btn svg { width: 18px; height: 18px; }
   .copy-toast { position: fixed; bottom: calc(80px + env(safe-area-inset-bottom) + 12px); left: 50%; transform: translateX(-50%); background: #1A1A1A; color: white; font-size: 12px; padding: 8px 16px; border-radius: 20px; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; z-index: 200; font-family: var(--sans); }
   .copy-toast.show { opacity: 1; }
 
-  /* date scroller */
+  /* slot-machine scroller */
   .scroller-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-bottom: 16px; }
-  .scroller-header { display: flex; padding: 14px 20px 10px; border-bottom: 1px solid var(--border); }
+  .scroller-header { display: flex; justify-content: space-between; padding: 14px 20px 10px; border-bottom: 1px solid var(--border); }
   .scroller-header-label { font-size: 11px; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .scroller-header-label:last-child { margin-left: auto; }
-  .scroller-list { max-height: 220px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-  .scroller-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border); transition: background 0.1s; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .scroller-row:active { background: #f0efe9; }
-  .scroller-row:last-child { border-bottom: none; }
-  .scroller-row.today { background: var(--accent-light); }
-  .scroller-row.today .scroller-date { color: var(--accent); font-weight: 600; }
-  .scroller-row.today .scroller-amount { color: var(--accent); font-weight: 600; }
-  .scroller-row.past { opacity: 0.45; }
-  .scroller-date { font-size: 13px; color: var(--ink); font-family: var(--sans); }
-  .scroller-amount { font-family: var(--mono); font-size: 13px; color: var(--ink); }
-  .scroller-copy-hint { font-size: 10px; color: var(--ink-muted); margin-top: 2px; }
+  .slot-wrap { position: relative; height: 52px; overflow: hidden; }
+  .slot-wrap::before, .slot-wrap::after { content: ''; position: absolute; left: 0; right: 0; height: 14px; z-index: 2; pointer-events: none; }
+  .slot-wrap::before { top: 0; background: linear-gradient(to bottom, var(--surface), transparent); }
+  .slot-wrap::after { bottom: 0; background: linear-gradient(to top, var(--surface), transparent); }
+  .slot-track { overflow-y: scroll; height: 52px; scroll-snap-type: y mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .slot-track::-webkit-scrollbar { display: none; }
+  .slot-item { height: 52px; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; scroll-snap-align: start; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .slot-item:active { background: var(--bg); }
+  .slot-item.today .slot-date { color: var(--accent); font-weight: 600; }
+  .slot-item.today .slot-amount { color: var(--accent); font-weight: 600; }
+  .slot-item.past .slot-date, .slot-item.past .slot-amount { opacity: 0.38; }
+  .slot-date { font-size: 14px; color: var(--ink); font-family: var(--sans); }
+  .slot-amount { font-family: var(--mono); font-size: 14px; color: var(--ink); }
   .info-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); }
   .info-row:last-child { border-bottom: none; }
   .info-row-label { font-size: 13px; color: var(--ink-muted); }
@@ -299,25 +300,29 @@ function showToast() {
 }
 
 function buildScroller(budget, start, end, today, totalDays, dailyBurn) {
-  var rows = '';
+  var items = '';
   var d = new Date(start.getTime());
   var todayTime = today.getTime();
+  var monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   for (var i = 0; i <= totalDays; i++) {
     var dTime = d.getTime();
     var daysEl = Math.round((dTime - start.getTime()) / 86400000);
-    var saldo = budget - (dailyBurn * daysEl);
-    if (saldo < 0) saldo = 0;
+    var saldo = Math.max(0, budget - (dailyBurn * daysEl));
+    var saldoRaw = Math.round(saldo);
     var isToday = (dTime === todayTime);
     var isPast = (dTime < todayTime);
-    var cls = isToday ? 'scroller-row today' : (isPast ? 'scroller-row past' : 'scroller-row');
-    var dayNum = d.getDate();
-    var monthNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    var label = dayNum + ' ' + monthNames[d.getMonth()];
-    var saldoRaw = Math.round(saldo);
-    rows += '<div class="' + cls + '" id="srow-' + i + '" data-saldo="' + saldoRaw + '"><span class="scroller-date">' + label + '</span><div style="display:flex;align-items:center;gap:8px;"><span class="scroller-amount">Rp ' + fmt(saldo) + '</span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.35;flex-shrink:0"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></div></div>';
+    var cls = 'slot-item' + (isToday ? ' today' : '') + (isPast ? ' past' : '');
+    var label = d.getDate() + ' ' + monthNames[d.getMonth()];
+    items += '<div class="' + cls + '" id="srow-' + i + '" data-saldo="' + saldoRaw + '">'
+      + '<span class="slot-date">' + label + '</span>'
+      + '<span class="slot-amount">Rp ' + fmt(saldo) + '</span>'
+      + '</div>';
     d.setDate(d.getDate() + 1);
   }
-  return '<div class="scroller-card"><div class="scroller-header"><span class="scroller-header-label">Tanggal</span><span class="scroller-header-label">Saldo &nbsp;·&nbsp; tap untuk salin</span></div><div class="scroller-list" id="scroller-list">' + rows + '</div></div>';
+  return '<div class="scroller-card">'
+    + '<div class="scroller-header"><span class="scroller-header-label">Tanggal</span><span class="scroller-header-label">Saldo</span></div>'
+    + '<div class="slot-wrap"><div class="slot-track" id="slot-track">' + items + '</div></div>'
+    + '</div>';
 }
 
 function renderDashboard() {
@@ -350,12 +355,14 @@ function renderDashboard() {
   var pctUsed = Math.round((daysElapsed / totalDays) * 100);
   var remainingRaw = remaining;
 
+  var copyIconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
   el.innerHTML = '<div class="fade-up">'
     + '<div class="period-chip">Periode Aktif &middot; ' + daysLeft + ' hari lagi</div>'
     + '<div class="dash-hero">'
     +   '<div class="dash-hero-top">'
     +     '<div class="dash-hero-amount"><span class="currency">Rp</span>' + fmt(remaining) + '</div>'
-    +     '<button class="copy-btn" id="btn-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Salin</button>'
+    +     '<button class="copy-btn" id="btn-copy">' + copyIconSvg + '</button>'
     +   '</div>'
     +   '<div class="dash-hero-date">Per ' + fmtDate(today) + '</div>'
     + '</div>'
@@ -369,29 +376,25 @@ function renderDashboard() {
     + buildScroller(data.budget, start, end, today, totalDays, dailyBurn)
     + '</div>';
 
-  // Copy button
-  document.getElementById('btn-copy').addEventListener('click', function() {
+  // Copy button hero — pakai onclick langsung karena innerHTML baru dibuat
+  document.getElementById('btn-copy').onclick = function() {
     copyAmount(remainingRaw);
-  });
+  };
 
-  // Click to copy on scroller rows
+  // Tap baris slot untuk copy
   setTimeout(function() {
-    var rows = document.querySelectorAll('.scroller-row');
-    rows.forEach(function(row) {
-      row.addEventListener('click', function() {
-        var saldo = row.getAttribute('data-saldo');
-        if (saldo) copyAmount(parseFloat(saldo));
-      });
+    document.querySelectorAll('.slot-item').forEach(function(item) {
+      item.onclick = function() {
+        var s = item.getAttribute('data-saldo');
+        if (s) copyAmount(parseFloat(s));
+      };
     });
-  }, 150);
 
-  // Auto scroll scroller to today
-  setTimeout(function() {
-    var list = document.getElementById('scroller-list');
+    // Auto scroll ke hari ini
+    var track = document.getElementById('slot-track');
     var todayRow = document.getElementById('srow-' + daysElapsed);
-    if (list && todayRow) {
-      var offset = todayRow.offsetTop - list.offsetHeight / 2 + todayRow.offsetHeight / 2;
-      list.scrollTop = offset;
+    if (track && todayRow) {
+      track.scrollTop = todayRow.offsetTop;
     }
   }, 100);
 }
