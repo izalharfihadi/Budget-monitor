@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copy Test</title>
+<style>
+  body { font-family: sans-serif; padding: 24px; background: #f5f5f5; }
+  h2 { margin-bottom: 16px; }
+  .btn { display: block; width: 100%; padding: 16px; margin-bottom: 12px; font-size: 15px; border: none; border-radius: 10px; cursor: pointer; background: #2D5A27; color: white; }
+  .result { background: white; border-radius: 10px; padding: 16px; margin-top: 16px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; word-break: break-all; border: 1px solid #ddd; min-height: 80px; }
+  .ok { color: green; font-weight: bold; }
+  .fail { color: red; font-weight: bold; }
+</style>
+</head>
+<body>
+<h2>Safari Copy Test</h2>
+<p style="font-size:13px;color:#666;margin-bottom:20px">Tap setiap tombol dan lihat hasilnya di bawah. Lalu screenshot dan kirim ke Claude.</p>
+
+<button class="btn" onclick="test1()">Test 1: navigator.clipboard.writeText</button>
+<button class="btn" onclick="test2()">Test 2: execCommand (textarea)</button>
+<button class="btn" onclick="test3()">Test 3: execCommand (input readonly)</button>
+<button class="btn" onclick="testInfo()">Info: Browser & Clipboard Support</button>
+
+<div class="result" id="result">Hasil akan muncul di sini...</div>
+
+<script>
+var log = '';
+
+function show(msg) {
+  log += msg + '\n';
+  document.getElementById('result').textContent = log;
+}
+
+function test1() {
+  log = '';
+  show('=== Test 1: navigator.clipboard.writeText ===');
+  if (!navigator.clipboard) {
+    show('FAIL: navigator.clipboard tidak tersedia');
+    return;
+  }
+  if (!navigator.clipboard.writeText) {
+    show('FAIL: writeText tidak tersedia');
+    return;
+  }
+  show('navigator.clipboard tersedia, mencoba writeText...');
+  navigator.clipboard.writeText('654412').then(function() {
+    show('OK: writeText berhasil — coba paste di Notes');
+  }).catch(function(err) {
+    show('FAIL: writeText gagal — ' + err.name + ': ' + err.message);
+  });
+}
+
+function test2() {
+  log = '';
+  show('=== Test 2: execCommand (textarea) ===');
+  var ta = document.createElement('textarea');
+  ta.value = '654412';
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.setSelectionRange(0, ta.value.length);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) { show('FAIL exception: ' + e); }
+  document.body.removeChild(ta);
+  show(ok ? 'OK: execCommand copy berhasil — coba paste di Notes' : 'FAIL: execCommand return false');
+}
+
+function test3() {
+  log = '';
+  show('=== Test 3: execCommand (input readonly) ===');
+  var inp = document.createElement('input');
+  inp.type = 'text';
+  inp.value = '654412';
+  inp.readOnly = true;
+  inp.style.cssText = 'position:fixed;top:0;left:0;width:2px;height:2px;opacity:0;font-size:16px;';
+  document.body.appendChild(inp);
+  inp.focus();
+  inp.setSelectionRange(0, 999999);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) { show('FAIL exception: ' + e); }
+  document.body.removeChild(inp);
+  show(ok ? 'OK: execCommand copy berhasil — coba paste di Notes' : 'FAIL: execCommand return false');
+}
+
+function testInfo() {
+  log = '';
+  show('=== Info Browser & Clipboard ===');
+  show('userAgent: ' + navigator.userAgent);
+  show('navigator.clipboard: ' + (navigator.clipboard ? 'ADA' : 'TIDAK ADA'));
+  show('navigator.clipboard.writeText: ' + (navigator.clipboard && navigator.clipboard.writeText ? 'ADA' : 'TIDAK ADA'));
+  show('document.execCommand: ' + (typeof document.execCommand === 'function' ? 'ADA' : 'TIDAK ADA'));
+  show('isSecureContext: ' + (window.isSecureContext ? 'YA (HTTPS)' : 'TIDAK (HTTP)'));
+  show('location.protocol: ' + location.protocol);
+}
+</script>
+</body>
+</html>
