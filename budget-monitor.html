@@ -65,9 +65,40 @@
   .period-chip::before { content: '●'; font-size: 7px; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .fade-up { animation: fadeUp 0.3s ease forwards; }
+
+  /* ── SPLASH ── */
+  #splash {
+    position: fixed;
+    inset: 0;
+    background: #2D5A27;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    transition: opacity 0.4s ease;
+  }
+  #splash.hide {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #splash img {
+    width: 110px;
+    height: 110px;
+    border-radius: 24px;
+    animation: splashBounce 0.7s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite alternate;
+  }
+  @keyframes splashBounce {
+    0%   { transform: translateY(0px) scale(1); }
+    60%  { transform: translateY(-18px) scale(1.05); }
+    100% { transform: translateY(0px) scale(0.97); }
+  }
 </style>
 </head>
 <body>
+
+<div id="splash">
+  <img src="icon.png" alt="Budget Monitor">
+</div>
 
 <div class="page" id="page-input">
   <h1>Budget Setup</h1>
@@ -262,6 +293,28 @@ function renderDashboard() {
     switchPage('dashboard');
   } else {
     switchPage('input');
+  }
+
+  // Sembunyikan splash setelah konten siap
+  var splash = document.getElementById('splash');
+  var minTime = 1800; // minimum tampil 1.8 detik agar bouncing terasa
+  var startTime = Date.now();
+
+  function hideSplash() {
+    var elapsed = Date.now() - startTime;
+    var remaining = Math.max(0, minTime - elapsed);
+    setTimeout(function() {
+      splash.classList.add('hide');
+      setTimeout(function() {
+        splash.style.display = 'none';
+      }, 400);
+    }, remaining);
+  }
+
+  if (document.readyState === 'complete') {
+    hideSplash();
+  } else {
+    window.addEventListener('load', hideSplash);
   }
 })();
 </script>
