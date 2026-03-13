@@ -178,18 +178,19 @@ var COOKIE_KEY = 'bm_v1';
 var GAS_URL = 'https://script.google.com/macros/s/AKfycbwcMzirMq7H-J2hQko-uq5igEEZXbQc7iqPWFRNUkqz41Kd_zvh3BAmZdb6GqGvT8ji/exec';
 
 function saveData(d) {
-  // Simpan lokal dulu (cookie + localStorage)
+  // Tambah timestamp saat simpan
+  d.savedAt = new Date().toISOString();
   var val = encodeURIComponent(JSON.stringify(d));
   var exp = new Date();
   exp.setFullYear(exp.getFullYear() + 1);
   document.cookie = COOKIE_KEY + '=' + val + '; expires=' + exp.toUTCString() + '; path=/';
   try { localStorage.setItem(COOKIE_KEY, JSON.stringify(d)); } catch(e) {}
-
-  // Kirim ke Google Sheets di background
-  syncToSheets(d);
+  // Kirim ke Spreadsheet di background
+  pushToSheets(d);
 }
 
-function syncToSheets(d) {
+function pushToSheets(d) {
+  // Selalu overwrite Row 2
   fetch(GAS_URL, {
     method: 'POST',
     mode: 'no-cors',
@@ -197,11 +198,10 @@ function syncToSheets(d) {
     body: JSON.stringify({
       budget: d.budget,
       start: d.start,
-      end: d.end
+      end: d.end,
+      savedAt: d.savedAt
     })
-  }).catch(function() {
-    // Gagal sync — tidak apa, data lokal tetap aman
-  });
+  }).catch(function() {});
 }
 
 function loadData() {
@@ -216,6 +216,60 @@ function loadData() {
   // Fallback localStorage
   try { return JSON.parse(localStorage.getItem(COOKIE_KEY)); } catch(e) {}
   return null;
+}
+
+function saveCookieOnly(d) {
+  var val = encodeURIComponent(JSON.stringify(d));
+  var exp = new Date();
+  exp.setFullYear(exp.getFullYear() + 1);
+  document.cookie = COOKIE_KEY + '=' + val + '; expires=' + exp.toUTCString() + '; path=/';
+  try { localStorage.setItem(COOKIE_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+function backgroundSync() {
+  // Ambil data dari Spreadsheet di background, bandingkan timestamp
+  fetch(GAS_URL, { method: 'GET', mode: 'cors' })
+    .then(function(res) { return res.json(); })
+    .then(function(json) {
+      if (json.status !== 'ok' || !json.data || json.data.length === 0) return;
+      var remote = json.data[0];
+      if (!remote.savedAt) return;
+      var local = loadData();
+      // Kalau tidak ada data lokal → pakai data Spreadsheet
+      if (!local) {
+        var d = { budget: remote.budget, start: remote.start, end: remote.end, savedAt: remote.savedAt };
+        saveCookieOnly(d);
+        // Reload halaman input dengan data baru
+        var num = parseInt(d.budget, 10);
+        inpBudget.value = num.toLocaleString('id-ID');
+        document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
+        document.getElementById('inp-start').value = d.start;
+        document.getElementById('inp-end').value = d.end;
+        document.getElementById('btn-reset').classList.add('visible');
+        renderDashboard();
+        return;
+      }
+      var localTime = local.savedAt ? new Date(local.savedAt).getTime() : 0;
+      var remoteTime = new Date(remote.savedAt).getTime();
+      if (remoteTime > localTime) {
+        // Spreadsheet lebih baru → update cookie dan tampilan
+        var d = { budget: remote.budget, start: remote.start, end: remote.end, savedAt: remote.savedAt };
+        saveCookieOnly(d);
+        var num = parseInt(d.budget, 10);
+        inpBudget.value = num.toLocaleString('id-ID');
+        document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
+        document.getElementById('inp-start').value = d.start;
+        document.getElementById('inp-end').value = d.end;
+        document.getElementById('btn-reset').classList.add('visible');
+        renderDashboard();
+      } else if (localTime > remoteTime) {
+        // Cookie lebih baru → push ke Spreadsheet
+        pushToSheets(local);
+      }
+    })
+    .catch(function() {
+      // Offline atau gagal — tidak apa-apa, cookie tetap dipakai
+    });
 }
 
 function clearData() {
@@ -436,7 +490,8 @@ function renderDashboard() {
     switchPage('input');
   }
 
-  // Sembunyikan splash setelah konten siap
+  // Background sync dengan Spreadsheet
+  setTimeout(backgroundSync, 2000);
   var splash = document.getElementById('splash');
   var minTime = 1800; // minimum tampil 1.8 detik agar bouncing terasa
   var startTime = Date.now();
