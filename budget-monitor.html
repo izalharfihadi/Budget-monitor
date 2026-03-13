@@ -467,22 +467,26 @@ function renderDashboard() {
     + buildScroller(data.budget, start, end, today, totalDays, dailyBurn)
     + '</div>';
 
-  // Copy button hero — pakai onclick langsung karena innerHTML baru dibuat
-  document.getElementById('btn-copy').onclick = function() {
-    var v = parseFloat(this.getAttribute('data-val'));
-    copyAmount(v, this);
+  // Event delegation — pasang di container, bukan di elemen dinamis
+  document.getElementById('dash-content').onclick = function(e) {
+    var btn = e.target.closest('#btn-copy');
+    if (btn) {
+      var v = parseFloat(btn.getAttribute('data-val'));
+      navigator.clipboard.writeText(String(Math.round(v))).then(showToast).catch(showToast);
+      btn.style.background = 'rgba(255,255,255,0.38)';
+      btn.style.transform = 'scale(0.88)';
+      setTimeout(function() { btn.style.background = ''; btn.style.transform = ''; }, 200);
+      return;
+    }
+    var slotItem = e.target.closest('.slot-item');
+    if (slotItem) {
+      var s = slotItem.getAttribute('data-saldo');
+      if (s) navigator.clipboard.writeText(s).then(showToast).catch(showToast);
+    }
   };
 
-  // Tap baris slot untuk copy
+  // Auto scroll ke hari ini
   setTimeout(function() {
-    document.querySelectorAll('.slot-item').forEach(function(item) {
-      item.onclick = function() {
-        var s = item.getAttribute('data-saldo');
-        if (s) copyAmount(parseFloat(s));
-      };
-    });
-
-    // Auto scroll ke hari ini
     var track = document.getElementById('slot-track');
     var todayRow = document.getElementById('srow-' + daysElapsed);
     if (track && todayRow) {
