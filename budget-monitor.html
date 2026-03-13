@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Budget Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F0EFE9; --surface: #FFFFFF; --card-bg: #E2E1DA;
+    --ink: #1A1A1A; --ink-muted: #7A7A7A;
+    --accent: #2D5A27; --accent-light: #E8F0E7;
+    --danger: #C0392B; --danger-light: #FDECEA;
+    --warn: #B8860B; --warn-light: #FDF6E3;
+    --border: #D6D5CE;
+    --mono: 'DM Mono', monospace; --sans: 'DM Sans', sans-serif;
+  }
+  body { font-family: var(--sans); background: var(--bg); color: var(--ink); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+  nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); display: flex; z-index: 100; padding-bottom: env(safe-area-inset-bottom); }
+  nav button { flex: 1; border: none; background: none; padding: 12px 0 10px; font-family: var(--sans); font-size: 11px; font-weight: 500; color: var(--ink-muted); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; -webkit-tap-highlight-color: transparent; }
+  nav button.active { color: var(--accent); }
+  nav button svg { width: 22px; height: 22px; }
+  .page { display: none; padding: 24px 20px; padding-bottom: calc(88px + env(safe-area-inset-bottom)); min-height: 100dvh; }
+  .page.active { display: block; }
+  h1 { font-size: 13px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 24px; margin-top: 8px; }
+  .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .field { margin-bottom: 20px; }
+  label { display: block; font-size: 12px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+  input[type="text"], input[type="date"] { width: 100%; border: 1.5px solid var(--border); border-radius: 10px; padding: 13px 14px; font-family: var(--mono); font-size: 16px; color: var(--ink); background: #FFFFFF; outline: none; -webkit-appearance: none; appearance: none; }
+  input:focus { border-color: var(--accent); }
+  input[type="date"] { font-family: var(--sans); }
+  .hint { font-size: 12px; color: var(--ink-muted); margin-top: 6px; font-family: var(--mono); }
+  .btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: 12px; padding: 15px; font-family: var(--sans); font-size: 15px; font-weight: 600; cursor: pointer; -webkit-tap-highlight-color: transparent; display: block; }
+  .btn:active { opacity: 0.75; }
+  .btn-reset { width: 100%; background: none; color: var(--danger); border: 1.5px solid var(--danger); border-radius: 12px; padding: 13px; font-family: var(--sans); font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 10px; -webkit-tap-highlight-color: transparent; display: none; }
+  .btn-reset.visible { display: block; }
+  .dash-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+  .dash-hero { background: var(--accent); border-radius: 20px; padding: 28px 24px; margin-bottom: 16px; position: relative; overflow: hidden; }
+  .dash-hero::before { content: ''; position: absolute; top: -40px; right: -40px; width: 160px; height: 160px; background: rgba(255,255,255,0.06); border-radius: 50%; }
+  .dash-hero-amount { font-family: var(--mono); font-size: 38px; font-weight: 400; color: white; letter-spacing: -0.5px; line-height: 1; }
+  .dash-hero-amount .currency { font-size: 18px; opacity: 0.7; margin-right: 2px; }
+  .dash-hero-date { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.55); font-family: var(--mono); }
+  .info-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .info-row:last-child { border-bottom: none; }
+  .info-row-label { font-size: 13px; color: var(--ink-muted); }
+  .info-row-value { font-family: var(--mono); font-size: 13px; font-weight: 500; }
+  .alert { border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; display: flex; gap: 12px; align-items: flex-start; }
+  .alert-warn { background: var(--warn-light); border: 1px solid rgba(184,134,11,0.2); }
+  .alert-danger { background: var(--danger-light); border: 1px solid rgba(192,57,43,0.2); }
+  .alert-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .alert-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+  .alert-body { font-size: 12px; color: var(--ink-muted); line-height: 1.5; }
+  .alert-warn .alert-title { color: var(--warn); }
+  .alert-danger .alert-title { color: var(--danger); }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--ink-muted); }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
+  .empty-state-body { font-size: 13px; line-height: 1.5; }
+  .period-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-light); color: var(--accent); border-radius: 20px; padding: 5px 12px; font-size: 11px; font-weight: 600; margin-bottom: 20px; }
+  .period-chip::before { content: '●'; font-size: 7px; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-up { animation: fadeUp 0.3s ease forwards; }
+</style>
+</head>
+<body>
+
+<div class="page" id="page-input">
+  <h1>Budget Setup</h1>
+  <div class="card">
+    <div class="field">
+      <label>Nominal Budget (Rp)</label>
+      <input type="text" id="inp-budget" inputmode="numeric" placeholder="1.526.961" autocomplete="off">
+      <div class="hint" id="budget-preview"></div>
+    </div>
+    <div class="field">
+      <label>Periode Mulai</label>
+      <input type="date" id="inp-start">
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Periode Selesai</label>
+      <input type="date" id="inp-end">
+    </div>
+  </div>
+  <button class="btn" id="btn-save">Simpan &amp; Lihat Dashboard &#8594;</button>
+  <button class="btn-reset" id="btn-reset">Hapus &amp; Reset Data</button>
+  <div id="input-error" style="margin-top:14px;display:none"></div>
+</div>
+
+<div class="page" id="page-dashboard">
+  <div id="dash-content"></div>
+</div>
+
+<nav>
+  <button id="nav-input">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+    Input
+  </button>
+  <button id="nav-dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+    </svg>
+    Dashboard
+  </button>
+</nav>
+
+<script>
+// Storage: pakai cookies agar bekerja di file:// Safari iOS
+var COOKIE_KEY = 'bm_v1';
+
+function saveData(d) {
+  var val = encodeURIComponent(JSON.stringify(d));
+  // expires 1 tahun
+  var exp = new Date();
+  exp.setFullYear(exp.getFullYear() + 1);
+  document.cookie = COOKIE_KEY + '=' + val + '; expires=' + exp.toUTCString() + '; path=/';
+  // fallback: coba localStorage juga
+  try { localStorage.setItem(COOKIE_KEY, JSON.stringify(d)); } catch(e) {}
+}
+
+function loadData() {
+  // Coba cookie dulu
+  var cookies = document.cookie.split(';');
+  for (var i = 0; i < cookies.length; i++) {
+    var c = cookies[i].trim();
+    if (c.indexOf(COOKIE_KEY + '=') === 0) {
+      try { return JSON.parse(decodeURIComponent(c.substring(COOKIE_KEY.length + 1))); } catch(e) {}
+    }
+  }
+  // Fallback localStorage
+  try { return JSON.parse(localStorage.getItem(COOKIE_KEY)); } catch(e) {}
+  return null;
+}
+
+function clearData() {
+  document.cookie = COOKIE_KEY + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
+  try { localStorage.removeItem(COOKIE_KEY); } catch(e) {}
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('id-ID'); }
+function fmtFull(n) { return 'Rp ' + fmt(n); }
+function parseRupiah(s) { return parseInt((s || '').replace(/[^\d]/g, ''), 10); }
+function fmtDate(d) { return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }); }
+
+function todayIso() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function parseIso(s) {
+  var p = s.split('-');
+  return new Date(+p[0], +p[1]-1, +p[2]);
+}
+function daysBetween(a, b) { return Math.round((b - a) / 86400000); }
+
+var inpBudget = document.getElementById('inp-budget');
+inpBudget.addEventListener('input', function() {
+  var raw = inpBudget.value.replace(/[^\d]/g, '');
+  if (raw) {
+    var num = parseInt(raw, 10);
+    inpBudget.value = num.toLocaleString('id-ID');
+    document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
+  } else {
+    document.getElementById('budget-preview').textContent = '';
+  }
+});
+
+function switchPage(name) {
+  ['input','dashboard'].forEach(function(n) {
+    document.getElementById('page-'+n).classList.remove('active');
+    document.getElementById('nav-'+n).classList.remove('active');
+  });
+  document.getElementById('page-'+name).classList.add('active');
+  document.getElementById('nav-'+name).classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+}
+
+document.getElementById('nav-input').addEventListener('click', function() { switchPage('input'); });
+document.getElementById('nav-dashboard').addEventListener('click', function() { switchPage('dashboard'); });
+
+document.getElementById('btn-save').addEventListener('click', function() {
+  document.getElementById('input-error').style.display = 'none';
+  var budget = parseRupiah(inpBudget.value);
+  var startStr = document.getElementById('inp-start').value;
+  var endStr = document.getElementById('inp-end').value;
+  if (!budget || isNaN(budget)) { showErr('Nominal budget belum diisi.'); return; }
+  if (!startStr) { showErr('Tanggal mulai belum dipilih.'); return; }
+  if (!endStr) { showErr('Tanggal selesai belum dipilih.'); return; }
+  if (parseIso(endStr) <= parseIso(startStr)) { showErr('Tanggal selesai harus setelah tanggal mulai.'); return; }
+  saveData({ budget: budget, start: startStr, end: endStr });
+  document.getElementById('btn-reset').classList.add('visible');
+  switchPage('dashboard');
+});
+
+document.getElementById('btn-reset').addEventListener('click', function() {
+  if (!confirm('Hapus semua data budget?')) return;
+  clearData();
+  inpBudget.value = '';
+  document.getElementById('budget-preview').textContent = '';
+  document.getElementById('inp-start').value = '';
+  document.getElementById('inp-end').value = '';
+  document.getElementById('input-error').style.display = 'none';
+  document.getElementById('btn-reset').classList.remove('visible');
+  switchPage('input');
+});
+
+function showErr(msg) {
+  var el = document.getElementById('input-error');
+  el.innerHTML = '<div class="alert alert-danger"><span class="alert-icon">!</span><div><div class="alert-title">Input tidak valid</div><div class="alert-body">' + msg + '</div></div></div>';
+  el.style.display = 'block';
+}
+
+function renderDashboard() {
+  var el = document.getElementById('dash-content');
+  var data = loadData();
+  if (!data) {
+    el.innerHTML = '<h1>Dashboard</h1><div class="empty-state fade-up"><div class="empty-state-icon">&#128203;</div><div class="empty-state-title">Belum ada data budget</div><div class="empty-state-body">Isi dulu di tab Input untuk mulai monitoring.</div></div>';
+    return;
+  }
+  var tStr = todayIso();
+  var start = parseIso(data.start);
+  var end = parseIso(data.end);
+  var today = parseIso(tStr);
+
+  if (today < start) {
+    var d2s = daysBetween(today, start);
+    el.innerHTML = '<h1>Dashboard</h1><div class="fade-up"><div class="alert alert-warn"><span class="alert-icon">&#9200;</span><div><div class="alert-title">Periode Belum Dimulai</div><div class="alert-body">Budget aktif mulai <strong>' + fmtDate(start) + '</strong>.<br>Sisa <strong>' + d2s + ' hari</strong> lagi.</div></div></div><div class="dash-card"><div class="info-row"><span class="info-row-label">Total Budget</span><span class="info-row-value">' + fmtFull(data.budget) + '</span></div><div class="info-row"><span class="info-row-label">Mulai</span><span class="info-row-value">' + fmtDate(start) + '</span></div><div class="info-row"><span class="info-row-label">Selesai</span><span class="info-row-value">' + fmtDate(end) + '</span></div></div></div>';
+    return;
+  }
+  if (today > end) {
+    el.innerHTML = '<h1>Dashboard</h1><div class="fade-up"><div class="alert alert-danger"><span class="alert-icon">&#9209;</span><div><div class="alert-title">Periode Telah Berakhir</div><div class="alert-body">Periode selesai pada <strong>' + fmtDate(end) + '</strong>.<br>Silakan buat budget baru di tab Input.</div></div></div><div class="dash-card"><div class="info-row"><span class="info-row-label">Total Budget</span><span class="info-row-value">' + fmtFull(data.budget) + '</span></div><div class="info-row"><span class="info-row-label">Periode</span><span class="info-row-value">' + fmtDate(start) + ' - ' + fmtDate(end) + '</span></div></div></div>';
+    return;
+  }
+
+  var totalDays = daysBetween(start, end);
+  var dailyBurn = data.budget / totalDays;
+  var daysElapsed = daysBetween(start, today);
+  var remaining = data.budget - (dailyBurn * daysElapsed);
+  var daysLeft = totalDays - daysElapsed;
+  var pctUsed = Math.round((daysElapsed / totalDays) * 100);
+
+  el.innerHTML = '<h1>Dashboard</h1><div class="fade-up"><div class="period-chip">Periode Aktif &middot; ' + daysLeft + ' hari lagi</div><div class="dash-hero"><div class="dash-hero-amount"><span class="currency">Rp</span>' + fmt(remaining) + '</div><div class="dash-hero-date">Per ' + fmtDate(today) + '</div></div><div class="dash-card"><div class="info-row"><span class="info-row-label">Total Budget</span><span class="info-row-value">' + fmtFull(data.budget) + '</span></div><div class="info-row"><span class="info-row-label">Burn per Hari</span><span class="info-row-value">' + fmtFull(dailyBurn) + '</span></div><div class="info-row"><span class="info-row-label">Hari Berjalan</span><span class="info-row-value">' + daysElapsed + ' / ' + totalDays + ' hari (' + pctUsed + '%)</span></div><div class="info-row"><span class="info-row-label">Mulai</span><span class="info-row-value">' + fmtDate(start) + '</span></div><div class="info-row"><span class="info-row-label">Selesai</span><span class="info-row-value">' + fmtDate(end) + '</span></div></div></div>';
+}
+
+// Init
+(function() {
+  var data = loadData();
+  if (data) {
+    var num = parseInt(data.budget, 10);
+    inpBudget.value = num.toLocaleString('id-ID');
+    document.getElementById('budget-preview').textContent = 'Rp ' + num.toLocaleString('id-ID');
+    document.getElementById('inp-start').value = data.start;
+    document.getElementById('inp-end').value = data.end;
+    document.getElementById('btn-reset').classList.add('visible');
+    switchPage('dashboard');
+  } else {
+    switchPage('input');
+  }
+})();
+</script>
+</body>
+</html>
