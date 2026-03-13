@@ -279,17 +279,19 @@ function showErr(msg) {
 
 function copyAmount(val) {
   var clean = String(Math.round(val));
+  var ta = document.createElement('textarea');
+  ta.value = clean;
+  ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;font-size:16px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.setSelectionRange(0, ta.value.length);
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  if (ok) { showToast(); return; }
+  // fallback modern API
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(clean).then(showToast);
-  } else {
-    var ta = document.createElement('textarea');
-    ta.value = clean;
-    ta.style.position = 'fixed'; ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    document.body.removeChild(ta);
-    showToast();
+    navigator.clipboard.writeText(clean).then(showToast).catch(function(){});
   }
 }
 
